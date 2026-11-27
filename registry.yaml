@@ -1,0 +1,131 @@
+# registry.yaml — the only place that knows about models.
+#
+#   version   schema version
+#   run       parameters shared by every model of a run
+#   models[]  name   → identity
+#             config → EVERY other parameter. This is the only place to edit.
+#
+#   python run.py --list                 # list the models below
+#   python run.py --model zipformer-30m  # run one model
+#   python run.py                        # run them all
+#
+# Paths are relative to the repository root; `python scripts/download_models.py`
+# downloads every model into exactly these paths.
+
+version: 4
+
+run:
+  num_threads: 4
+  warmup_samples: 3        # used when --warmup true (default); not recorded
+
+models:
+  - name: chunkformer-ctc-large-vie
+    config:
+      adapter: chunkformer
+      dtype: fp32
+      provider: cuda
+      note: "ChunkFormer-CTC large, PyTorch fp32. off/on both use pyctcdecode beam search."
+      path: models/chunkformer-ctc-large-vie
+      chunk_size: 64
+      left_context_size: 128
+      right_context_size: 128
+      hotword_enabled: true
+      hotword_case: lower             # vocabulary pieces are lowercase
+      hotword_score: 5.0
+      hotword_score_param: hotword_weight
+
+  - name: parakeet-ctc-0.6b-vi
+    config:
+      adapter: parakeet-ctc
+      dtype: fp32
+      provider: cuda
+      note: "NeMo FastConformer-CTC 0.6B, fp32. off/on both use NeMo's pyctcdecode strategy."
+      path: models/parakeet-ctc-0.6b-vi/parakeet-ctc-0.6b-vi.nemo
+      beam_size: 8
+      hotword_enabled: true
+      hotword_case: upper             # tokenizer emits case; acronyms are uppercase
+      hotword_score: 5.0
+      hotword_score_param: hotword_weight
+
+  - name: phowhisper-medium
+    config:
+      adapter: faster-whisper
+      dtype: fp32
+      provider: cuda
+      note: "PhoWhisper-medium converted to CTranslate2 float32. Hotwords via the decoder prompt."
+      path: models/phowhisper-medium-ct2-fp32
+      compute_type: float32
+      beam_size: 5
+      language: vi
+      hotword_enabled: true
+      hotword_case: as_is
+      hotword_prompt: null            # null = space-joined words passed as `hotwords`
+
+  - name: qwen3-asr-0.6b
+    config:
+      adapter: qwen3-asr
+      # The checkpoint is bf16. true = upcast to fp32 at load (lossless);
+      # false = keep bf16 (on T4/sm_75 bf16 has no hardware support: slow fallback kernels).
+      # `dtype` must match: fp32 when true, bf16 when false (checked at load).
+      convert_to_fp32: true
+      dtype: fp32
+      provider: cuda
+      note: "Qwen3-ASR-0.6B run locally with Transformers. Hotwords via the transcription prompt."
+      path: models/qwen3-asr-0.6b
+      max_new_tokens: 256
+      language: vi
+      hotword_enabled: true
+      hotword_case: as_is
+      hotword_prompt: "Vocabulary: {words}."
+
+  - name: qwen3-asr-1.7b
+    config:
+      adapter: qwen3-asr-api
+      dtype: bf16
+      provider: remote
+      note: "Qwen3-ASR-1.7B served bf16 by the company API; skipped when unreachable (e.g. Kaggle)."
+      url: http://192.168.0.47:3979/transcribe_qwen3_asr
+      file_field: file                # TODO confirm the API contract
+      context_field: context
+      response_field: text
+      timeout_s: 60
+      ping_attempts: 2
+      hotword_enabled: true
+      hotword_case: as_is
+      hotword_prompt: "{words}"
+
+  - name: zipformer-30m
+    config:
+      adapter: sherpa-offline
+      dtype: fp32
+      provider: cuda
+      note: "hynt/Zipformer-30M-RNNT-6000h, offline transducer, fp32 ONNX."
+      encoder: models/zipformer-30m/encoder-epoch-20-avg-10.onnx
+      decoder: models/zipformer-30m/decoder-epoch-20-avg-10.onnx
+      joiner: models/zipformer-30m/joiner-epoch-20-avg-10.onnx
+      tokens: models/zipformer-30m/tokens.txt
+      # Both keys below are required for hotwords to have any effect; other
+      # decoding methods accept hotwords and silently ignore them.
+      decoding_method: modified_beam_search
+      max_active_paths: 8
+      hotword_enabled: true
+      hotword_case: upper             # BPE vocabulary is uppercase
+      hotword_score: 1.5
+      hotword_score_param: hotwords_score
+
+  - name: zipformer-291m
+    config:
+      adapter: sherpa-online
+      dtype: fp32
+      provider: cuda
+      note: "stdo/PengChengStarling, streaming zipformer2 (8 languages), fp32 ONNX."
+      encoder: models/zipformer-291m/encoder-epoch-75-avg-11-chunk-16-left-128.onnx
+      decoder: models/zipformer-291m/decoder-epoch-75-avg-11-chunk-16-left-128.onnx
+      joiner: models/zipformer-291m/joiner-epoch-75-avg-11-chunk-16-left-128.onnx
+      tokens: models/zipformer-291m/tokens.txt
+      decoding_method: modified_beam_search
+      max_active_paths: 8
+      hotword_enabled: true
+      hotword_case: upper             # Latin/English pieces are uppercase
+      hotword_score: 1.5
+      hotword_score_param: hotwords_score
