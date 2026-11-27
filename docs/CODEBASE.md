@@ -51,7 +51,7 @@ Harness không import gì trong `data/`. Tooling dữ liệu chỉ mượn `scor
 |---|---|---|
 | `scoring.py` không import gì trong dự án; tập keyword được truyền vào và giống nhau ở mọi model | mỗi model chấm bằng một tập đáp án riêng thì không so được | `test_scoring_imports_nothing_from_the_project` |
 | Hàm chấm không có tham số điều kiện (`off`/`on`) | cùng output phải ra cùng điểm ở mọi điều kiện | `test_score_has_no_condition_parameter` |
-| Chỉ canonical được tính, không bao giờ dạng đánh vần | yêu cầu của OVERVIEW | `test_spelled_or_phonetic_forms_never_count`, `test_boostable_needs_hotwords_and_spelled_forms_never_count` |
+| Chỉ canonical được tính, không bao giờ dạng đánh vần | yêu cầu gốc của khảo sát | `test_spelled_or_phonetic_forms_never_count`, `test_boostable_needs_hotwords_and_spelled_forms_never_count` |
 | `harness/` không có `if model == ...` | thêm model không phải sửa harness | rà soát thủ công |
 | Key "bắt buộc" trong `adapters.CONTRACTS` phải thật sự được adapter đọc | chặn kiểu khai `path` mà adapter đọc `config["model"]` | `test_required_keys_are_read_by_the_adapter` |
 | Chỉ adapter đối chứng đặt `needs_ground_truth = True` | adapter thật không bao giờ được thấy nhãn | đối chứng nằm ngoài `adapters/` |

@@ -1,6 +1,8 @@
 # Repositiory-specific
 models/
 data/
+#personal docs, not to be committed
+docs-nocommit/ 
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

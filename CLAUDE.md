@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A model-agnostic harness that benchmarks Vietnamese speech-to-text models on one shared dataset (90 samples, 30 per group: `vi`, `vi-en`, `vi-en-acro`) for an on-device virtual receptionist. Each model is only an entry in `registry.yaml`; evaluating a new model should not require changing harness code.
 
-**`docs/OVERVIEW.md` is the user's requirements document and the source of truth.** `docs/METRIC.md` is the authoritative description of how those requirements are implemented. Docs stay in Vietnamese (handover). Code docstrings, CLI help and messages are in English.
+**The user's requirements document (OVERVIEW.md) and the theory comparison (COMPARE.md) are private and kept outside the repo; do not recreate them.** `docs/METRIC.md` is the authoritative description of how the requirements are implemented. Docs stay in Vietnamese (handover). Code docstrings, CLI help and messages are in English.
 
 Target machine: **Kaggle T4**. `qwen3-asr-1.7b` is served by a company API on a LAN IP (`http://192.168.0.47:3979/transcribe_qwen3_asr`). It is unreachable from Kaggle; the adapter pings it on load and the harness skips the model (`unavailable`) instead of failing.
 
@@ -62,4 +62,6 @@ Required fields first, in this order: `id`, `data_class`, `audio`, `ref`, `spoke
 - PhoWhisper runs via CTranslate2 converted with `quantization=float32` (`models/phowhisper-medium-ct2-fp32`, produced by the download script from `models/phowhisper-medium`).
 - On a small local GPU (the dev laptop has a 2 GB MX450), the fp32 zipformer-291m and PhoWhisper OOM and are skipped as `load_failed`. To exercise them, copy the registry with `provider: cpu` and pass a small `--manifest` (audio paths may be absolute).
 - `qwen3-asr-0.6b` runs locally (`adapters/qwen3_asr.py`, `Qwen/Qwen3-ASR-0.6B-hf`). `convert_to_fp32: true|false` picks fp32 or native bf16 and `dtype` must match (registry `dtype_flag` rule). bf16 works on sm_75 (T4/MX450) through fallback kernels: accuracy is fine, latency is not representative.
+- Install order matters: `pip install -r requirements.txt`, then the `--no-deps` chunkformer line, then `pip install --no-deps nvidia-cuda-runtime-cu12==12.9.79` (sherpa-onnx's ORT 1.28 needs `cudaLibraryGetKernel`; torch pins 12.4.127, so it cannot live in the file), then uninstall torchvision. `cuda_env.py` finds `nvidia/*/lib` through the `nvidia` package, so it works with conda `site-packages` and Debian/Kaggle `dist-packages`. A cuda model with peak VRAM < 50 MB gets a "likely fell back to CPU" note.
+- On Kaggle, `pip uninstall -y torchvision` after installing requirements: the image's torchvision does not match torch 2.6.0 and breaks every `transformers` import (`operator torchvision::nms does not exist`). The project never uses torchvision.
 - The Qwen API request contract (`file_field`, `context_field`, `response_field`) in `registry.yaml` is a guess pending confirmation.

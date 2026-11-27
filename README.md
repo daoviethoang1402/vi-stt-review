@@ -19,27 +19,36 @@ không truy cập được.
 
 | File | Nội dung |
 |---|---|
-| [docs/OVERVIEW.md](docs/OVERVIEW.md) | **Yêu cầu gốc**: model, dataset, metric, quy trình, harness |
 | [docs/METRIC.md](docs/METRIC.md) | **Ground truth** về cách chấm: WER, Recall, Precision, FA/1k, resource footprint |
 | [docs/PIPELINE.md](docs/PIPELINE.md) | Quy trình, danh sách model, interface adapter, `registry.yaml`, artifact, dữ liệu |
 | [docs/CODEBASE.md](docs/CODEBASE.md) | Kiến trúc code và phụ thuộc giữa các module |
-| [docs/COMPARE.md](docs/COMPARE.md) | So sánh các model về lý thuyết (không có số đo) |
 | [data/README.md](data/README.md) | Bộ dữ liệu: nguồn, cột manifest, trạng thái kiểm định, cách tạo lại |
 
 ## Cài đặt
 
-Python 3.11, CUDA 12.4. Bộ version đã pin nằm trong [requirements.txt](requirements.txt), kèm hai
+Python 3.11 hoặc 3.13 (Kaggle), CUDA 12. Bộ version đã pin (đã cài sạch và chạy đủ 7 model trên 3.13) nằm trong [requirements.txt](requirements.txt), kèm hai
 `--extra-index-url` bắt buộc (torch `+cu124` và wheel CUDA của sherpa-onnx) và ghi chú vì sao
 `chunkformer` / `pyctcdecode` phải cài `--no-deps`. `run.py` tự đặt `LD_LIBRARY_PATH` rồi exec lại
 chính mình, không cần `export` tay.
 
 ```bash
 pip install -r requirements.txt
+pip install --no-deps chunkformer==1.2.2 pyctcdecode==0.5.0 pygtrie==2.6.2 hypothesis==6.170.15
+pip install --no-deps nvidia-cuda-runtime-cu12==12.9.79   # sherpa-onnx (ORT 1.28) cần CUDA runtime ≥ 12.9
+pip uninstall -y torchvision      # trên Kaggle/Colab: torchvision có sẵn lệch với torch vừa cài
 ```
 
-```bash
-pip install --no-deps chunkformer==1.2.2 pyctcdecode==0.5.0 pygtrie==2.6.2 hypothesis==6.170.15
-```
+Thứ tự các lệnh quan trọng: chạy lại `pip install -r requirements.txt` sẽ hạ CUDA runtime về 12.4,
+nên phải cài lại dòng `nvidia-cuda-runtime-cu12` sau đó. Thiếu runtime 12.9, hai model zipformer in
+`undefined symbol: cudaLibraryGetKernel … Fallback to cpu` và chạy CPU; report ghi chú việc này
+("peak VRAM is 0 MB").
+
+Dự án không dùng `torchvision`, nhưng `transformers` tự import nó nếu có. Trên Kaggle, bản có sẵn
+được build cho torch của image; sau khi cài torch 2.6.0 đè lên, mọi import `transformers` (convert
+PhoWhisper, adapter Qwen) gãy với `operator torchvision::nms does not exist`. Gỡ nó đi là đủ.
+
+Script tải đi lần lượt từng model; một model lỗi không chặn các model sau, và script thoát mã 1
+kèm danh sách model lỗi. Chạy lại thì file đã đủ kích thước được bỏ qua.
 
 ```bash
 python scripts/download_models.py            # tải mọi model vào models/ (~11,5 GB)
@@ -103,5 +112,5 @@ scoring.py        hàm chấm
 scripts/          tải model
 data/             dataset, hotwords.yaml, tooling validate/prepare
 tests/            test + adapter đối chứng (oracle, dummy, boostable)
-docs/             OVERVIEW · METRIC · PIPELINE · CODEBASE · COMPARE
+docs/             METRIC · PIPELINE · CODEBASE
 ```

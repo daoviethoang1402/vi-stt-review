@@ -1,12 +1,25 @@
 # requirements.txt — pin môi trường chạy khảo sát (conda env `vi-stt`).
 #
-# Đích: Python 3.11 · Linux x86_64 · CUDA 12.4. Đã chạy trên GPU sm_75 (cùng kiến
-# trúc với T4); Orin là sm_87.
+# Đích: Linux x86_64 · CUDA 12 · Python 3.11 (máy dev) và 3.13 (Kaggle). Đã cài sạch và
+# chạy đủ 7 model trên Python 3.13 (2026-11-27). GPU sm_75 (cùng kiến trúc với T4).
 #
 # Cài:
 #   python -m pip install -r requirements.txt
 #   python -m pip install --no-deps chunkformer==1.2.2 pyctcdecode==0.5.0 \
 #                                     pygtrie==2.6.2 hypothesis==6.170.15
+#   python -m pip install --no-deps nvidia-cuda-runtime-cu12==12.9.79
+#   python -m pip uninstall -y torchvision      # Kaggle / Colab: see below
+#
+# Vì sao cài riêng `nvidia-cuda-runtime-cu12==12.9.79`: ONNX Runtime 1.28 nhúng trong
+# sherpa-onnx cần symbol `cudaLibraryGetKernel` (CUDA runtime ≥ 12.9). torch 2.6.0+cu124
+# khai đúng 12.4.127, nên không pin được trong file này (pip báo xung đột); phải cài đè
+# bằng `--no-deps`. Thiếu bước này, sherpa in `undefined symbol: cudaLibraryGetKernel …
+# Fallback to cpu` và hai model zipformer lặng lẽ chạy CPU. torch vẫn chạy với 12.9.
+#
+# Vì sao gỡ `torchvision`: dự án không dùng nó, nhưng `transformers` tự import nó nếu có.
+# Image Kaggle cài sẵn một `torchvision` build cho torch của image; sau khi file này cài
+# torch 2.6.0 đè lên, hai gói lệch nhau và mọi import `transformers` (convert PhoWhisper,
+# adapter Qwen) gãy với `operator torchvision::nms does not exist`.
 #
 # Vì sao hai lệnh cuối phải tách và phải `--no-deps`:
 #   • chunkformer 1.2.2 khai `deepspeed`, `langid`, `tensorboardx`. Cả ba chỉ được
@@ -18,12 +31,10 @@
 #     chạy thật với numpy 2.4.6. Ba dependency thật của nó (pygtrie, numpy,
 #     hypothesis) vì vậy phải khai tay ở lệnh trên.
 #
-# Không pin các wheel con `nvidia-*`: torch tự khai phiên bản của chúng, pin tay
-# sẽ xung đột resolver. Trên máy hiện tại `pip check` báo đúng 3 lệch đã biết —
-# chunkformer (2 gói huấn luyện ở trên), pyctcdecode/numpy, và
-# nvidia-cuda-runtime-cu12 (máy đang có 12.9.79 trong khi torch 2.6.0+cu124 khai
-# 12.4.127). Cài mới sẽ tự lấy 12.4.127 — đúng bản torch được build cùng, vẫn
-# chạy được; không lệch nào ảnh hưởng kết quả đo.
+# Không pin các wheel con `nvidia-*` khác: torch tự khai phiên bản của chúng. Sau khi cài
+# đủ, `pip check` báo đúng các lệch đã biết và vô hại: chunkformer (deepspeed, langid,
+# tensorboardx, textgrid — chỉ dùng khi huấn luyện), pyctcdecode/numpy, và
+# nvidia-cuda-runtime-cu12 12.9.79 (torch khai 12.4.127).
 #
 # Index phụ: torch `+cu124` chỉ có trên index của PyTorch; wheel sherpa-onnx có
 # CUDA nằm ở trang find-links của k2-fsa (wheel mặc định trên PyPI là **CPU-only**,
@@ -42,6 +53,11 @@ sherpa-onnx==2.0.1+cuda12.cudnn9.onnxruntime1.28.2
 # faster-whisper (PhoWhisper): CT2 + package faster_whisper để lấy tokenizer
 ctranslate2==4.9.0
 faster-whisper==1.2.1
+# faster-whisper import PyAV. Adapter truyền waveform nên không gọi `av.open()` (bản PyAV mới
+# bỏ tham số `metadata_errors` mà faster-whisper 1.2.1 vẫn truyền); pin bản đã kiểm.
+av==19.0.2
+# chunkformer import `jiwer` ngay khi nạp model (cài chunkformer bằng --no-deps nên phải khai tay)
+jiwer==4.0.0
 # parakeet-ctc: NeMo + bộ extra `asr` (pin từng gói bên dưới)
 nemo-toolkit==3.0.0
 # transformers: chỉ để convert PhoWhisper sang CTranslate2 (scripts/download_models.py)
@@ -78,6 +94,9 @@ pydub==0.25.1
 soundfile==0.14.0
 librosa==0.11.0
 numba==0.68.1
+# NeMo dùng numba.cuda. Image Kaggle cài sẵn một `numba-cuda` lệch với numba 0.68.1
+# (`numba.cuda.types has no attribute 'NPDatetime'`); pin bản đã kiểm để pip thay nó.
+numba-cuda==0.30.4
 llvmlite==0.50.0
 scipy==1.17.1
 soxr==1.1.0

@@ -30,6 +30,9 @@ HOTWORD_CHOICES = {"no": (BOOST_OFF,), "yes": (BOOST_ON,), "both": (BOOST_OFF, B
 #: Casing applied to hotwords so they exist in the model's vocabulary.
 HOTWORD_CASES = ("as_is", "upper", "lower")
 
+#: A cuda model below this peak VRAM almost surely ran on CPU (smallest model ~100 MB).
+CPU_FALLBACK_VRAM_MB = 50.0
+
 STATUS_OK = "ok"
 STATUS_UNAVAILABLE = "unavailable"
 STATUS_LOAD_FAILED = "load_failed"
@@ -217,6 +220,12 @@ def run_model(spec: ModelSpec, ctx: RunContext) -> ModelResult:
         result.resource = _resource(spec, adapter, result.levels[measured], measured, sampler)
         if measured != BOOST_ON:
             result.notes.append("resource measured on `off` (`on` was not run)")
+    vram = result.resource.get("peak_vram_mb")
+    if spec.device == "cuda" and vram is not None and vram < CPU_FALLBACK_VRAM_MB:
+        result.notes.append(
+            f"provider is cuda but peak VRAM is {vram:.0f} MB: the runtime most likely fell back "
+            "to CPU silently (check LD_LIBRARY_PATH / CUDA libraries); latency is CPU latency"
+        )
     if BOOST_ON in result.levels and scoring.Aggregate.of(result.levels[BOOST_ON]).a == 0:
         result.notes.append(
             "Σ|A| = 0: the model printed no canonical keyword at all — inspect `text_raw` in "

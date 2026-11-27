@@ -1,6 +1,6 @@
 # Pipeline khảo sát mô hình STT — model-agnostic
 
-Yêu cầu gốc: [OVERVIEW.md](OVERVIEW.md). Metric: [METRIC.md](METRIC.md) là ground truth, tài liệu
+Metric: [METRIC.md](METRIC.md) là ground truth, tài liệu
 này không định nghĩa lại. Kiến trúc code: [CODEBASE.md](CODEBASE.md).
 
 ## Yêu cầu
@@ -236,7 +236,7 @@ token keyword đọc trong `ref`.
 | Adapter nhận hotword nhưng thực chất bỏ qua | registry chặn cấu hình sai đã biết; so `off`/`on` trên `per_sample/`; test `boostable` |
 | Hotword sai hoa thường so với vocab ⇒ sherpa bỏ qua im lặng | `hotword_case` khai theo vocab của từng model |
 | Keyword trùng từ thường ⇒ FA oan | `validate_dataset.py` chặn trên nhãn; soi `per_sample/` khi FA cao |
-| Runtime tự rơi về CPU mà không báo | adapter tự kiểm (CTranslate2, torch); `cuda_env.py` đặt `LD_LIBRARY_PATH` trước khi nạp CUDA; `peak_vram` gần 0 là dấu hiệu |
+| Runtime tự rơi về CPU mà không báo | adapter tự kiểm (CTranslate2, torch); `cuda_env.py` đặt `LD_LIBRARY_PATH` trước khi nạp CUDA; model `cuda` có `peak_vram` < 50 MB được report ghi chú *likely fell back to CPU*. Với sherpa-onnx còn cần CUDA runtime ≥ 12.9 (xem README, mục *Cài đặt*) |
 | API công ty không truy cập được | adapter ping trước, model bị bỏ qua với trạng thái `unavailable` |
 | Số của T4 bị đọc thành số Jetson | `fingerprint.json` ghi GPU; chỉ so giữa các model |
 | Recall với 33 keyword | một keyword = 3 điểm %; luôn đọc kèm Σ\|L\| và số tuyệt đối |

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from adapters.base import Segment, check_boost_level, weight_files_mb
+from adapters.base import Segment, check_boost_level, read_waveform, weight_files_mb
 
 
 class FasterWhisperSession:
@@ -27,8 +27,11 @@ class FasterWhisperSession:
         self._hotwords = None if self._prompt else (words or None)
 
     def transcribe(self, segment: Segment) -> str:
+        # Pass the waveform, not the path: with a path faster-whisper decodes through
+        # PyAV (`av.open(..., metadata_errors=...)`), which breaks on newer PyAV releases.
+        samples, _ = read_waveform(segment.audio)
         segments, _ = self._adapter.model.transcribe(
-            str(segment.audio),
+            samples,
             language=str(self._adapter.config.get("language", "vi")),
             beam_size=int(self._adapter.config.get("beam_size", 5)),
             hotwords=self._hotwords,

@@ -172,12 +172,21 @@ def main(argv: list[str] | None = None) -> int:
     unknown = [name for name in names if name not in MODELS and name not in REMOTE]
     if unknown:
         parser.error(f"unknown model(s): {unknown}")
+    failed: dict[str, str] = {}
     for name in names:
         print(f"[{name}]")
         if name in REMOTE:
             print(f"  skip    {REMOTE[name]}")
             continue
-        download(name, args.output)
+        try:
+            download(name, args.output)
+        except Exception as exc:  # noqa: BLE001 - one broken model must not block the others
+            failed[name] = f"{type(exc).__name__}: {exc}"
+            print(f"  FAILED  {failed[name]}", flush=True)
+    if failed:
+        print(f"\n{len(failed)} model(s) failed: {', '.join(failed)} — the others were downloaded.",
+              file=sys.stderr)
+        return 1
     return 0
 
 

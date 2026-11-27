@@ -1,6 +1,6 @@
 # Metric — định nghĩa và cách tính
 
-Đi kèm [PIPELINE.md](PIPELINE.md). Yêu cầu gốc nằm ở [OVERVIEW.md](OVERVIEW.md); file này là
+Đi kèm [PIPELINE.md](PIPELINE.md). File này là
 **ground truth** về cách cài đặt yêu cầu đó trong code (`scoring.py`).
 
 | Nhóm | Metric | Đo khi nào |
