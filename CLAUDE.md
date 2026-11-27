@@ -44,7 +44,7 @@ The control adapters `oracle`, `dummy` and `boostable` live in `tests/controls.p
 
 - **Canonical only.** A keyword counts only when its canonical form appears as a whole token after normalization (NFC, lowercase, punctuation → space). Spelled or phonetic forms are never credited, and `hotwords.yaml` holds only `canonical` + `distractor` (the old `variants` lists and the `hotword_form` knob were removed).
 - **Per-sample sets.** `A` = canonicals of `hotwords.yaml` (distractors included) present in the output. `L` = the record's `spoken_form` (a list of canonical strings in order of appearance, repeats kept; order and repeats do not affect the score).
-- **Micro averages only**: WER = ΣE/ΣN, Recall = Σ|A∩L|/Σ|L|, Precision = Σ|A∩L|/Σ|A|, FA/1k = Σ|A\L|/ΣN×1000 plus the raw FA count.
+- **Micro averages only**: WER = ΣE/ΣN, Recall = Σ|A∩L|/Σ|L|, Precision = Σ|A∩L|/Σ|A|, FA/1k = Σ|A\L|/ΣN×1000, plus the raw TP and FA counts as columns (Σ|L| is a dataset constant stated once under table 2; Σ|A| = TP + FA, so neither is a column).
 - **Not reported:** FIR (it equals 1 − Precision), macro averages, KER, Recall at `off`, ΔRecall, WER quantiles.
 - **Cell markers:** `—` = undefined, needs a look (e.g. Precision when Σ|A| = 0; the model stays in the table with a note). `n/a` = not applicable (Recall/Precision for groups whose labels hold no keyword).
 - **`off` reports WER only.** `on` reports all four metrics plus resources (precision, p50/p95 per-utterance latency, throughput = Σaudio/Σtime, peak_rss = VmHWM, per-process peak_vram, model_size).

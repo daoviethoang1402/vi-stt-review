@@ -105,6 +105,15 @@ def _keyword_cells(agg) -> tuple[str, str]:
     return _pct(agg.recall), _pct(agg.precision)
 
 
+def _labels_line(results: list[ModelResult]) -> str:
+    """Σ|L| is a dataset constant: stated once instead of a column repeating it."""
+    rows = results[0].levels[BOOST_ON]
+    groups = by_group(rows)
+    holding = [f"`{name}`" for name, agg in groups.items() if name != ALL and agg.l]
+    where = f", all in {', '.join(holding)}" if holding else ""
+    return f"Σ|L| = {groups[ALL].l} labelled keywords{where} (same for every model)."
+
+
 def write_summary_md(results: list[ModelResult], fingerprint: dict, path: Path) -> None:
     groups = _groups(results)
     classes = [group for group in groups if group != ALL]
@@ -137,21 +146,26 @@ def write_summary_md(results: list[ModelResult], fingerprint: dict, path: Path) 
         lines += [
             "## 2. Accuracy with hotwords (`on`) — whole dataset",
             "",
-            "| Model | WER | Recall | Precision | FA/1k | FA | Σ\\|L\\| | Σ\\|A\\| |",
-            "|---|---:|---:|---:|---:|---:|---:|---:|",
+            _labels_line(on),
+            "",
+            "| Model | WER | Recall | Precision | FA/1k | TP | FA |",
+            "|---|---:|---:|---:|---:|---:|---:|",
         ]
         for result in on:
             agg = Aggregate.of(result.levels[BOOST_ON])
             lines.append(
                 f"| `{result.spec.name}` | {_pct(agg.wer)} | {_pct(agg.recall)} | "
-                f"{_pct(agg.precision)} | {_num(agg.fa_per_1k)} | {agg.fa} | {agg.l} | {agg.a} |"
+                f"{_pct(agg.precision)} | {_num(agg.fa_per_1k)} | {agg.tp} | {agg.fa} |"
             )
         lines += [
             "",
             "## 3. Appendix — accuracy with hotwords (`on`) per data group",
             "",
-            "| Model | Group | WER | Recall | Precision | FA/1k | FA |",
-            "|---|---|---:|---:|---:|---:|---:|",
+            "TP of the whole dataset = sum of the groups' TP (only groups with labelled keywords have any); "
+            "same for FA.",
+            "",
+            "| Model | Group | WER | Recall | Precision | FA/1k | TP | FA |",
+            "|---|---|---:|---:|---:|---:|---:|---:|",
         ]
         for result in on:
             aggs = by_group(result.levels[BOOST_ON])
@@ -162,7 +176,7 @@ def write_summary_md(results: list[ModelResult], fingerprint: dict, path: Path) 
                 recall, precision = _keyword_cells(agg)
                 lines.append(
                     f"| `{result.spec.name}` | `{group}` | {_pct(agg.wer)} | {recall} | "
-                    f"{precision} | {_num(agg.fa_per_1k)} | {agg.fa} |"
+                    f"{precision} | {_num(agg.fa_per_1k)} | {agg.tp} | {agg.fa} |"
                 )
         lines.append("")
 
@@ -211,8 +225,8 @@ def write_summary_md(results: list[ModelResult], fingerprint: dict, path: Path) 
         "- Keywords are matched on their **canonical** form only, as whole tokens, case-insensitive. "
         "`A` = keywords of `hotwords.yaml` (distractors included) present in the output; "
         "`L` = keywords annotated in the label; both are sets per sample.",
-        "- `Recall` = Σ|A∩L| / Σ|L| · `Precision` = Σ|A∩L| / Σ|A| · `FA/1k` = Σ|A\\L| / ΣN × 1000; "
-        "`FA` is the raw false-alarm count.",
+        "- `TP` = Σ|A∩L| (keywords heard correctly) · `FA` = Σ|A\\L| (keywords printed but not in the label). "
+        "`Recall` = TP / Σ|L| · `Precision` = TP / (TP + FA) · `FA/1k` = FA / ΣN × 1000.",
         f"- `{UNDEFINED}` = undefined (e.g. Precision when Σ|A| = 0: the model printed no keyword — "
         f"inspect per_sample/). `{NOT_APPLICABLE}` = not applicable (the group's labels hold no keyword).",
         "- `peak_rss` = peak host RAM of the whole process (VmHWM). `peak_vram` = peak VRAM of the "

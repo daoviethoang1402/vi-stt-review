@@ -239,4 +239,4 @@ token keyword đọc trong `ref`.
 | Runtime tự rơi về CPU mà không báo | adapter tự kiểm (CTranslate2, torch); `cuda_env.py` đặt `LD_LIBRARY_PATH` trước khi nạp CUDA; model `cuda` có `peak_vram` < 50 MB được report ghi chú *likely fell back to CPU*. Với sherpa-onnx còn cần CUDA runtime ≥ 12.9 (xem README, mục *Cài đặt*) |
 | API công ty không truy cập được | adapter ping trước, model bị bỏ qua với trạng thái `unavailable` |
 | Số của T4 bị đọc thành số Jetson | `fingerprint.json` ghi GPU; chỉ so giữa các model |
-| Recall với 33 keyword | một keyword = 3 điểm %; luôn đọc kèm Σ\|L\| và số tuyệt đối |
+| Recall với 33 keyword | một keyword = 3 điểm %; luôn đọc kèm số tuyệt đối TP / FA và Σ\|L\| ghi dưới bảng 2 |

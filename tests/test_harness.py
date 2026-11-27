@@ -117,6 +117,12 @@ class ReportTest(unittest.TestCase):
             self.assertEqual(vi_row.count("n/a"), 2)
             overall = summary.split("## 2.")[1].split("## 3.")[0]
             self.assertIn("—", next(line for line in overall.splitlines() if line.startswith("| `dummy`")))
+            self.assertIn("| Model | WER | Recall | Precision | FA/1k | TP | FA |", overall)
+            self.assertNotIn("Σ\\|A\\|", overall)
+            labelled = sum(len(set(record["spoken_form"])) for record in RECORDS)
+            self.assertIn(f"Σ|L| = {labelled} labelled keywords", overall)
+            oracle_row = next(line for line in overall.splitlines() if line.startswith("| `oracle`"))
+            self.assertTrue(oracle_row.endswith(f"| {labelled} | 0 |"))
 
             with (out / "accuracy.csv").open(encoding="utf-8") as handle:
                 rows = list(csv.DictReader(handle))

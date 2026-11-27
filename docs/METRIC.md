@@ -81,7 +81,12 @@ Mọi metric là **micro**: cộng tử của mọi mẫu, cộng mẫu của m�
 | **Precision** | Σ\|A∩L\| / Σ\|A\| | Σ\|A\| = 0 (model không in keyword nào) |
 | **FA/1k** | Σ\|A \ L\| / ΣN × 1000 | không bao giờ |
 
-Kèm theo luôn báo **FA** (số lần bịa tuyệt đối), Σ\|L\| và Σ\|A\|, để người đọc thấy mẫu số.
+Kèm theo là hai số đếm tuyệt đối: **TP** = Σ\|A∩L\| (keyword nghe đúng) và **FA** = Σ\|A \ L\|
+(keyword bịa). Từ hai số này kiểm lại được cả hai tỷ lệ: Recall = TP / Σ\|L\|, Precision = TP / (TP + FA).
+Σ\|L\| là hằng số của dataset nên chỉ ghi một lần dưới tiêu đề bảng 2, không thành cột; Σ\|A\| = TP + FA
+nên cũng không cần cột riêng. Bảng 2 và bảng 3 nối với nhau bằng phép cộng: TP toàn bộ = TP của nhóm
+`vi-en-acro` (hai nhóm kia không có nhãn keyword), FA toàn bộ = tổng FA của 3 nhóm. Vì vậy Precision
+toàn bộ có thể thấp hơn Precision của nhóm `vi-en-acro`: FA ở nhóm `vi-en` kéo nó xuống.
 
 - **WER micro** phản ánh đúng tỷ lệ lỗi trên tổng lượng từ; câu dài có trọng số lớn hơn câu ngắn.
 - **Recall micro** cho mẫu số Σ\|L\| > 0 ở cấp toàn dataset (hiện 33 keyword, tất cả ở nhóm
